@@ -119,6 +119,12 @@ export async function main (inputArgv: string[]) {
     return
   }
 
+  const isParallel = cliOptions['sort'] === false && cliOptions['stream'] === true && cliOptions['workspace-concurrency'] === Number.POSITIVE_INFINITY
+  if (isParallel && cliOptions['collapse-output']) {
+    cliOptions['stream'] = false
+    config.stream = false
+  }
+
   let write: (text: string) => void = process.stdout.write.bind(process.stdout)
   // chalk reads the FORCE_COLOR env variable
   if (config.color === 'always') {
@@ -216,6 +222,10 @@ export async function main (inputArgv: string[]) {
     }
     config.allProjectsGraph = filterResults.allProjectsGraph
     config.selectedProjectsGraph = filterResults.selectedProjectsGraph
+    const isSingleProject = filterResults.allProjects.length === 1 && filterResults.allProjects[0].dir === wsDir
+    if (isParallel && isSingleProject) {
+      config.selectedProjectsGraph = filterResults.allProjectsGraph
+    }
     if (isEmpty(config.selectedProjectsGraph)) {
       if (printLogs) {
         console.log(`No projects matched the filters in "${wsDir}"`)
